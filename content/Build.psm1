@@ -56,7 +56,7 @@ Function Project {
 
         If ($Clean) {
             Write-Host "Cleaning project $projectName" -ForegroundColor Magenta
-            msbuild $projectFile /t:Clean ("/p:Configuration=$Script:configuration") /v:quiet | Out-Null
+            Exec { msbuild $projectFile /t:Clean ("/p:Configuration=$Script:configuration") /v:quiet | Out-Null }
             
             If ($outDir) {
                 If (Test-Path $outDir) {
@@ -72,7 +72,7 @@ Function Project {
         ElseIf ($Build) {
             Write-Host "Building project $projectName" -ForegroundColor Magenta
 
-            msbuild $projectFile /t:Build /v:quiet ("/p:Configuration=$Script:configuration") (IIf $outDir "/p:OutDir=$outDir") (IIf $DisableDebugInfo ("/p:DebugSymbols=false", "/p:DebugType=none")) (IIf $DisableXmlDocs "/p:AllowedReferenceRelatedFileExtensions=none") | Out-Null
+            Exec { msbuild $projectFile /t:Build /v:quiet ("/p:Configuration=$Script:configuration") (IIf $outDir "/p:OutDir=$outDir") (IIf $DisableDebugInfo ("/p:DebugSymbols=false", "/p:DebugType=none")) (IIf $DisableXmlDocs "/p:AllowedReferenceRelatedFileExtensions=none") | Out-Null }
 
             If ($LASTEXITCODE -ne 0) {
                 Write-Host "Build failed for project $projectName" -ForegroundColor Red
@@ -127,5 +127,5 @@ Function CommonOutputDir {
 }
 
 Function VsTest {
-    &$Script:pathes['vstest'] $args
+    Exec { &$Script:pathes['vstest'] $args }
 }
