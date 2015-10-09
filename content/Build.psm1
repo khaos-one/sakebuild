@@ -165,15 +165,15 @@ Function Build-ProtoBufTypeModel {
 
     $tm = [ProtoBuf.Meta.TypeModel]::Create()
 
-    ForEach ($t in $typeSpec) {
-        If ($t.Value -is [System.Array]) {
-            $a = $tm.Add($t.Value[0], $true)
-            ForEach ($s in $t.Value[1]) {
-                $a.AddSubType($s[0], $s[1]) | Out-Null
+    For ($i = 0; $i -lt $typeSpec.Length; $i++) {
+        If ($typeSpec[$i] -is [array]) {
+            $a = $tm.Add($typeSpec[$i][0], $true)
+            For ($j = 1; $j -lt $typeSpec[$i].Length; $j++) {
+                $a.AddSubType($typeSpec[$i][$j][0], $typeSpec[$i][$j][1]) | Out-Null
             }
         }
         Else {
-            $tm.Add($t, $true) | Out-Null
+            $tm.Add($typeSpec[$i], $true) | Out-Null
         }
     }
 
