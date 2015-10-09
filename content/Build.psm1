@@ -16,6 +16,22 @@ Function IIf($If, $IfTrue, $IfFalse) {
     Else {If ($IfFalse) {If ($IfFalse -is "ScriptBlock") {&$IfFalse} Else {$IfFalse}}}
 }
 
+Function CallerInfo {
+    Param(
+        [switch] $File,
+        [switch] $Path
+    )
+
+    $cs = Get-PSCallStack
+
+    If ($File) {
+        Return $cs[2].ScriptName
+    }
+    ElseIf ($Path) {
+        Return (Split-Path $cs[2].ScriptName)
+    }
+}
+
 Function Project {
     Param(
         [string] $projectName,
@@ -128,4 +144,41 @@ Function CommonOutputDir {
 
 Function VsTest {
     Exec { &$Script:pathes['vstest'] $args }
+}
+
+Function Build-ProtoBufTypeModel {
+    Param(
+        $typeSpec,
+        $typeName,
+        $OutputDirectory = ''
+    )
+
+    Write-Host "Compiling ProtoBuf type model" -ForegroundColor Magenta
+
+    # This hackery needs to be done because protobuf's `Compile` does not accept pathes.
+    $invocationPath = CallerInfo -Path
+    $tsource = Join-Path $invocationPath "$typeName.dll"
+    $tdest = IIf $OutputDirectory { Join-Path $OutputDirectory "$typeName.dll" } "$typeName.dll"
+
+    IIf (Test-Path $tsource) { Remove-Item $tsource -Force }
+    IIf (Test-Path $tdest) { Remove-Item $tdest -Force }
+
+    $tm = [ProtoBuf.Meta.TypeModel]::Create()
+
+    ForEach ($t in $typeSpec) {
+        If ($t.Value -is [System.Array]) {
+            $a = $tm.Add($t.Value[0], $true)
+            ForEach ($s in $t.Value[1]) {
+                $a.AddSubType($s[0], $s[1]) | Out-Null
+            }
+        }
+        Else {
+            $tm.Add($t, $true) | Out-Null
+        }
+    }
+
+    $tm.Compile($typeName, "$typeName.dll") | Out-Null
+    Move-Item $tsource $tdest -Force
+
+    Write-Host "Type model compiled" -ForegroundColor Green
 }
