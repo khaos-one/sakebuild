@@ -5,7 +5,9 @@ Import-Module $PSScriptRoot/psake/psake.psm1
 $Script:projects = @{}
 $Script:configuration = 'Debug'
 $Script:commonOutDir = ''
-$Script:toolsVersion 
+
+$Script:pathes = @{}
+$Script:pathes['vstest'] = 'C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe'
 
 ## Functions.
 
@@ -25,10 +27,11 @@ Function Project {
         [switch] $Build,
         [switch] $UpdateBuildNumber,
         [switch] $ProjectFilePath,
-        [switch] $ProjectDirPath,
+        [switch] $ProjectDirectory,
         [switch] $DisableDebugInfo,
         [switch] $DisableXmlDocs,
         [switch] $PureBuild
+        #[switch] $Test
     )
 
     If ($projectName -and $projectFile) {
@@ -88,7 +91,7 @@ Function Project {
 
                 If ($assemblyInfo -cmatch 'AssemblyVersion\("(\d+)\.(\d+)\.(\d+)\.(\d+)"\)\]') {
                     $newBuildNumber = ($Matches[4] -as [int]) + 1
-                    Write-Host "Project $projectName build number now is $newBuildNumber" -ForegroundColor Green
+                    Write-Host "Project $projectName build number now is $newBuildNumber" -ForegroundColor Magenta
                     $assemblyInfo = $assemblyInfo -creplace 'AssemblyVersion\("(\d+)\.(\d+)\.(\d+)\.(\d+)"\)\]', ('AssemblyVersion("{0}.{1}.{2}.{3}")]' -f $matches[1], $matches[2], $matches[3], $newBuildNumber)
                     $assemblyInfo > $aiFile
                 }
@@ -97,7 +100,7 @@ Function Project {
         ElseIf ($ProjectFilePath) {
             Return (Resolve-Path $projectFile)
         }
-        ElseIf ($ProjectDirPath) {
+        ElseIf ($ProjectDirectory) {
             Return Resolve-Path(Split-Path $projectFile)
         }
     }
@@ -111,10 +114,18 @@ Function ProjectConfiguration {
     $Script:configuration = $config
 }
 
+Function Get-ProjectConfiguration {
+    Return $Script:configuration
+}
+
 Function CommonOutputDir {
     Param(
         [string] $outputDir
     )
 
     $Script:commonOutDir = $outputDir
+}
+
+Function VsTest {
+    &$Script:pathes['vstest'] $args
 }
