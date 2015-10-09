@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>SakeBuild</id>
+    <version>0.4.0</version>
+    <authors>Egor khaos Zelensky</authors>
+    <owners>Egor khaos Zelensky</owners>
+    <licenseUrl>http://github.com/khaos-one/sakebuild/blob/master/LICENSE</licenseUrl>
+    <projectUrl>http://github.com/khaos-one/sakebuild</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Extension of PSake build metasystem.</description>
+    <copyright>Copyright Egor khaos Zelensky, 2015</copyright>
+    <tags>psake sakebuild build automation script</tags>
+  </metadata>
+</package>
