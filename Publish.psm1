@@ -4,18 +4,44 @@ $Script:fileQueue = @()
 
 ## Functions.
 
+Function Get-RandomDriveLetter {
+    Return ls function:[d-z]: -n|?{!(test-path $_)}|random
+}
+
 Function Attach-Samba {
     Param(
         [string] $sambaRoot
     )
 
-    $Script:drive = Get-Random
-    New-PSDrive -Name $Script:drive -PSProvider FileSystem -Root $sambaRoot *> $null
+    Try {
+        $Script:remoteRoot = Get-RandomDriveLetter
+        $Script:driveLetter = $Script:remoteRoot -replace '.$'
+        $Script:drive = New-PSDrive -Name $Script:driveLetter -PSProvider FileSystem -Root $sambaRoot -Persist
+    }
+    Catch {
+        Write-Host "Failed to create a drive: $_" -ForegroundColor Red
+        $Script:drive = $null
+        Return
+    }
+
+    Try {
+        $dinfo = Get-PSDrive $Script:drive
+    }
+    Catch {
+        Write-Host "Failed to connect to drive" -ForegroundColor Red
+        $Script:drive = $null
+        Return
+    }
 }
 
 Function Detach-Samba {
-    If ($Script:drive) {
-        Remove-PSDrive $Script:drive
+    Try {
+        If ($Script:drive) {
+            Remove-PSDrive $Script:drive
+        }
+    }
+    Catch {
+        Write-Host "There is no drive to disconnect" -ForegroundColor Red
     }
 }
 
@@ -32,7 +58,7 @@ Function Set-RemoteRoot {
         [string] $remoteRoot
     )
 
-    $Script:remoteRoot = $remoteRoot
+    $Script:remoteRoot = $Script:remoteRoot + '\' + $remoteRoot
 }
 
 Function Enqueue-File {
@@ -48,37 +74,51 @@ Function Clear-FileQueue {
 }
 
 Function Do-Transfer {
+    Write-Host "Publishing to $Script:remoteRoot" -ForegroundColor Magenta
+
+    ForEach ($file in $Script:fileQueue) {
+        Write-Host "File ${file}: " -NoNewline -ForegroundColor Magenta
+
+        If ($Script:localRoot) {
+            $localFile = (Join-Path $Script:localRoot $file)
+        }
+
+        $remoteFile = (Join-Path $Script:remoteRoot $file)
+
+        If (!(Test-Path $localFile)) {
+            Write-Host "skipped" -ForegroundColor Yellow
+        }
+        Else {
+            Copy-Item $localFile $remoteFile -Force
+            Write-Host "ok" -ForegroundColor Green
+        }
+    }
+
+    Clear-FileQueue
+    Write-Host "File transfer completed" -ForegroundColor Green
+}
+
+Function Transfer-File {
     Param(
-        [switch] $Verbose
+        [string] $localFile,
+        [string] $remoteFile
     )
 
-    If ($Script:remoteRoot -and $Script:localRoot) {
-        If ($Verbose) {
-            Write-Host "Publishing to $Script:remoteRoot"
-        }
+    Write-Host "Publishing file ${localFile}: " -NoNewline -ForegroundColor Magenta
 
-        ForEach ($file in $Script:fileQueue) {
-            If ($Verbose) {
-                Write-Host "File $file : " -NoNewline
-            }
+    If ($Script:localRoot) {
+        $localFile = (Join-Path $Script:localRoot $file)
+    }
 
-            $localFile = (Join-Path $Script:localRoot $file)
-            $remoteFile = (Join-Path $Script:remoteRoot $file)
+    $remoteFile = $Script:remoteRoot + '\' + $remoteFile
 
-            If (!(Test-Path $localFile)) {
-                If ($Verbose) {
-                    Write-Host "skipped"
-                }
-            }
-            Else {
-                Copy-Item $localFile $remoteFile -Force
-                
-                If ($Verbose) {
-                    Write-Host "ok"
-                }
-            }
-        }
-
-        Clear-FileQueue
+    If (!(Test-Path $localFile)) {
+        Write-Host "skipped" -ForegroundColor Yellow
+    }
+    Else {
+    Write-Host $localFile
+    Write-Host $remoteFile
+        Copy-Item $localFile $remoteFile -Force
+        Write-Host "ok" -ForegroundColor Green
     }
 }
