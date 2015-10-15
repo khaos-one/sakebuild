@@ -98,7 +98,7 @@ Function Project {
             }
         }
         ElseIf ($UpdateBuildNumber) {
-            $dir = Resolve-Path(Split-Path $projectFile)
+            $dir = Project $projectName -ProjectDirectory
             $aiFile = Join-Path $dir Properties\AssemblyInfo.cs
 
             If (Test-Path $aiFile) {
@@ -117,7 +117,7 @@ Function Project {
             Return (Resolve-Path $projectFile)
         }
         ElseIf ($ProjectDirectory) {
-            Return Resolve-Path(Split-Path $projectFile)
+            Return Split-Path (Project $projectName -ProjectFilePath)
         }
     }
 }
@@ -182,3 +182,6 @@ Function Build-ProtoBufTypeModel {
 
     Write-Host "Type model compiled" -ForegroundColor Green
 }
+
+
+Export-ModuleMember -Function IIf, CallerInfo, Project, ProjectConfiguration, CommonOutputDir, VsTest, Build-ProtoBufTypeModel
