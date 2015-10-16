@@ -184,4 +184,4 @@ Function Build-ProtoBufTypeModel {
 }
 
 
-Export-ModuleMember -Function IIf, CallerInfo, Project, ProjectConfiguration, CommonOutputDir, VsTest, Build-ProtoBufTypeModel
+Export-ModuleMember -Function IIf, CallerInfo, Project, ProjectConfiguration, Get-ProjectConfiguration, CommonOutputDir, VsTest, Build-ProtoBufTypeModel
