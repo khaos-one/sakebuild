@@ -32,6 +32,14 @@ Function CallerInfo {
     }
 }
 
+Function OutputErrors {
+    Param(
+        $errors
+    )
+
+        
+}
+
 Function Project {
     Param(
         [string] $projectName,
@@ -88,10 +96,12 @@ Function Project {
         ElseIf ($Build) {
             Write-Host "Building project $projectName" -ForegroundColor Magenta
 
-            Exec { msbuild $projectFile /t:Build /v:quiet ("/p:Configuration=$Script:configuration") (IIf $outDir "/p:OutDir=$outDir") (IIf $DisableDebugInfo ("/p:DebugSymbols=false", "/p:DebugType=none")) (IIf $DisableXmlDocs "/p:AllowedReferenceRelatedFileExtensions=none") | Out-Null }
+            Exec { 
+                msbuild $projectFile /t:Build /v:quiet ("/p:Configuration=$Script:configuration") (IIf $outDir "/p:OutDir=$outDir") (IIf $DisableDebugInfo ("/p:DebugSymbols=false", "/p:DebugType=none")) (IIf $DisableXmlDocs "/p:AllowedReferenceRelatedFileExtensions=none") | Out-Null
+            }
 
             If ($LASTEXITCODE -ne 0) {
-                Write-Host "Build failed for project $projectName" -ForegroundColor Red
+                Write-Error "Build failed for project $projectName"
             }
             Else {
                 Write-Host "Build succeded for project $projectName" -ForegroundColor Green
