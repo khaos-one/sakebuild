@@ -50,14 +50,20 @@ Function Get-FilePathInSomeCallerDir {
         $dir = Split-Path $dir
         $filePath = Join-Path $dir $fileName
 
-        Write-Host $filePath -ForegroundColor Blue
+        #Write-Host $filePath -ForegroundColor Blue
 
         If (Test-Path $filePath) {
             Return $filePath
         }
     }
 
-    return (Join-Path (Get-Location) $fileName)
+    $filePath = (Join-Path (Get-Location) $fileName)
+    
+    If (Test-Path $filePath) {
+        Return $filePath
+    }
+
+    Return (Join-Path .. $fileName)
 }
 
 Function Project {
@@ -210,6 +216,7 @@ Function Build-ProtoBufTypeModel {
     $tm.Compile($typeName, "$typeName.dll") | Out-Null
 
     $tsource = Get-FilePathInSomeCallerDir "$typeName.dll"
+    #Write-Host $tsource -ForegroundColor Blue
     #IIf (Test-Path $tsource) { Remove-Item $tsource -Force }
 
     Move-Item $tsource $tdest -Force
