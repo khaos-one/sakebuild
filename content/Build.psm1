@@ -23,6 +23,7 @@ Function CallerInfo {
     )
 
     $cs = Get-PSCallStack
+    Write-Host $cs -ForegroundColor Blue
 
     If ($File) {
         Return $cs[2].ScriptName
@@ -32,12 +33,31 @@ Function CallerInfo {
     }
 }
 
-Function OutputErrors {
+Function Get-FilePathInSomeCallerDir {
     Param(
-        $errors
+        [string] $fileName
     )
 
-        
+    $callers = Get-PSCallStack
+
+    ForEach ($caller in $callers) {
+        $dir = $caller.ScriptName
+
+        If ($dir -eq $null) {
+            Continue
+        }
+
+        $dir = Split-Path $dir
+        $filePath = Join-Path $dir $fileName
+
+        Write-Host $filePath -ForegroundColor Blue
+
+        If (Test-Path $filePath) {
+            Return $filePath
+        }
+    }
+
+    return (Join-Path (Get-Location) $fileName)
 }
 
 Function Project {
@@ -110,6 +130,7 @@ Function Project {
         ElseIf ($UpdateBuildNumber) {
             $dir = Project $projectName -ProjectDirectory
             $aiFile = Join-Path $dir Properties\AssemblyInfo.cs
+            $aiFile = IIf (Test-Path $aiFile) { $aiFile } { Join-Path $dir Src\Properties\AssemblyInfo.cs }
 
             If (Test-Path $aiFile) {
                 Write-Host "Updating build number for project $projectName" -ForegroundColor Magenta
@@ -119,6 +140,7 @@ Function Project {
                     $newBuildNumber = ($Matches[4] -as [int]) + 1
                     Write-Host "Project $projectName build number now is $newBuildNumber" -ForegroundColor Magenta
                     $assemblyInfo = $assemblyInfo -creplace 'AssemblyVersion\("(\d+)\.(\d+)\.(\d+)\.(\d+)"\)\]', ('AssemblyVersion("{0}.{1}.{2}.{3}")]' -f $matches[1], $matches[2], $matches[3], $newBuildNumber)
+                    $assemblyInfo = $assemblyInfo.TrimEnd(" `r`n`t")
                     $assemblyInfo > $aiFile
                 }
             }
@@ -166,11 +188,9 @@ Function Build-ProtoBufTypeModel {
     Write-Host "Compiling ProtoBuf type model" -ForegroundColor Magenta
 
     # This hackery needs to be done because protobuf's `Compile` does not accept pathes.
-    $invocationPath = CallerInfo -Path
-    $tsource = Join-Path $invocationPath "$typeName.dll"
+    #$invocationPath = CallerInfo -Path
+    
     $tdest = IIf $OutputDirectory { Join-Path $OutputDirectory "$typeName.dll" } "$typeName.dll"
-
-    IIf (Test-Path $tsource) { Remove-Item $tsource -Force }
     IIf (Test-Path $tdest) { Remove-Item $tdest -Force }
 
     $tm = [ProtoBuf.Meta.TypeModel]::Create()
@@ -188,8 +208,11 @@ Function Build-ProtoBufTypeModel {
     }
 
     $tm.Compile($typeName, "$typeName.dll") | Out-Null
-    Move-Item $tsource $tdest -Force
 
+    $tsource = Get-FilePathInSomeCallerDir "$typeName.dll"
+    #IIf (Test-Path $tsource) { Remove-Item $tsource -Force }
+
+    Move-Item $tsource $tdest -Force
     Write-Host "Type model compiled" -ForegroundColor Green
 }
 
