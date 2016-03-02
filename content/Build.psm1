@@ -202,15 +202,32 @@ Function Build-ProtoBufTypeModel {
     $tm = [ProtoBuf.Meta.TypeModel]::Create()
 
     For ($i = 0; $i -lt $typeSpec.Length; $i++) {
-        If ($typeSpec[$i] -is [array]) {
-            $a = $tm.Add($typeSpec[$i][0], $true)
-            For ($j = 1; $j -lt $typeSpec[$i].Length; $j++) {
-                $a.AddSubType($typeSpec[$i][$j][0], $typeSpec[$i][$j][1]) | Out-Null
+        if ($typeSpec[$i] -is [hashtable]) {
+            $a = $tm.Add($typeSpec[$i].type, $true);
+
+            if ($typeSpec[$i].ContainsKey('include') -and $typeSpec[$i].include -ne $null) {
+                for ($j = 1; $j -lt $typeSpec[$i].include.Length; $j++) {
+                    $a.AddSubType($typeSpec[$i].include[$j].offset, $typeSpec[$i].include[$j].type) | Out-Null
+                }
+            }
+
+            if ($typeSpec[$i].ContainsKey('surrogate') -and $typeSpec[$i].surrogate -ne $null) {
+                $a.SetSurrogate($typeSpec[$i].surrogate) | Out-Null
             }
         }
-        Else {
+        else {
             $tm.Add($typeSpec[$i], $true) | Out-Null
         }
+
+        # If ($typeSpec[$i] -is [array]) {
+        #     $a = $tm.Add($typeSpec[$i][0], $true)
+        #     For ($j = 1; $j -lt $typeSpec[$i].Length; $j++) {
+        #         $a.AddSubType($typeSpec[$i][$j][0], $typeSpec[$i][$j][1]) | Out-Null
+        #     }
+        # }
+        # Else {
+        #     $tm.Add($typeSpec[$i], $true) | Out-Null
+        # }
     }
 
     $tm.Compile($typeName, "$typeName.dll") | Out-Null
